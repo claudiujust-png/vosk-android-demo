@@ -39,6 +39,10 @@ import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+
 public class VoskActivity extends Activity implements
         RecognitionListener {
 
@@ -55,6 +59,7 @@ public class VoskActivity extends Activity implements
     private SpeechService speechService;
     private SpeechStreamService speechStreamService;
     private TextView resultView;
+    private boolean isSavingToFile = false;
 
     @Override
     public void onCreate(Bundle state) {
@@ -121,9 +126,26 @@ public class VoskActivity extends Activity implements
     }
 
     @Override
-    public void onResult(String hypothesis) {
-        resultView.append(hypothesis + "\n");
+public void onResult(String hypothesis) {
+    // The hypothesis is a JSON string, e.g., {"text": "hello world"}
+    // You should extract the text part.
+    String text = hypothesis; // Simple version for this example
+    
+    // Voice Commands
+    if (text.contains("start saving")) {
+        isSavingToFile = true;
+        writeToTxt("--- LOG STARTED ---");
+    } else if (text.contains("stop saving")) {
+        isSavingToFile = false;
+        writeToTxt("--- LOG STOPPED ---");
     }
+
+    if (isSavingToFile) {
+        writeToTxt(text);
+    }
+    
+    resultView.append(text + "\n");
+}
 
     @Override
     public void onFinalResult(String hypothesis) {
@@ -149,6 +171,18 @@ public class VoskActivity extends Activity implements
         setUiState(STATE_DONE);
     }
 
+    private void writeToTxt(String text) {
+    try {
+        // This saves to the app's internal folder: /Android/data/org.vosk.demo/files/
+        File file = new File(getExternalFilesDir(null), "my_speech.txt");
+        BufferedWriter writer = new BufferedWriter(new FileWriter(file, true));
+        writer.write(text + "\n");
+        writer.close();
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+        
     private void setUiState(int state) {
         switch (state) {
             case STATE_START:
